@@ -1,8 +1,17 @@
 import pandas as pd
+import boto3
+from io import BytesIO
 
 def extract_data():
-    df = pd.read_parquet('yellow_tripdata_2024-01.parquet')
+    bucket = "nyc-etl-demo-mgelogaev"
+    key = "yellow_tripdata_2024-01.parquet"
+
+    s3 = boto3.client("s3")
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    data = obj["Body"].read()
+    df = pd.read_parquet(BytesIO(data))
     return df
+    
 
 def transform_data(df):
     df['trip_duration'] = (df['tpep_dropoff_datetime'] - df['tpep_pickup_datetime']).dt.total_seconds()
