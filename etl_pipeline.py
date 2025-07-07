@@ -1,6 +1,9 @@
 import pandas as pd
 import boto3
 from io import BytesIO
+import os
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
 
 def extract_data():
     bucket = "nyc-etl-demo-mgelogaev"
@@ -18,8 +21,24 @@ def transform_data(df):
     return df[['tpep_pickup_datetime', 'tpep_dropoff_datetime', 'trip_distance', 'trip_duration']]
 
 def load_data(df):
-    df.to_csv('clean_data.csv', index=False) # index=False means don't save the DataFrame index as a separate column
+    load_dotenv()
+
+    df.to_csv('clean_data.csv', index=False)
     print("Saved clean_data.csv")
+
+    user = os.getenv("DB_USER")
+    pwd = os.getenv("DB_PASS")
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    name = os.getenv("DB_NAME")
+
+    uri = f"postgresql://{user}:{pwd}@{host}:{port}/{name}"
+
+    engine = create_engine(uri)
+
+    df.to_sql("taxi_trips", engine, if_exists="replace", index=False)
+
+    print("Uploaded data to RDS table taxi_trips")
 
 def main():
     df = extract_data()
